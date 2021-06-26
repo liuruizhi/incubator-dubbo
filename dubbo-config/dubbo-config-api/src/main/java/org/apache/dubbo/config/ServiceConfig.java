@@ -85,6 +85,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      * <p>
      * Actually，when the {@link ExtensionLoader} init the {@link Protocol} instants,it will automatically wraps two
      * layers, and eventually will get a <b>ProtocolFilterWrapper</b> or <b>ProtocolListenerWrapper</b>
+     *
+     * <clinit>时会初始化该属性，进而会初始化一个ExtensionLoader实例
+     *
      */
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 

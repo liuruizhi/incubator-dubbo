@@ -29,6 +29,8 @@ import java.lang.annotation.Target;
  *
  * @see ExtensionLoader
  * @see URL
+ *
+ * @author Adaptive
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -88,6 +88,9 @@ public class ExtensionLoader<T> {
 
     private final Map<String, Object> cachedActivates = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Holder<Object>> cachedInstances = new ConcurrentHashMap<>();
+    /**
+     * 已缓存的AdaptiveExtension实例
+     */
     private final Holder<Object> cachedAdaptiveInstance = new Holder<>();
     private volatile Class<?> cachedAdaptiveClass = null;
     private String cachedDefaultName;
@@ -99,6 +102,7 @@ public class ExtensionLoader<T> {
 
     private ExtensionLoader(Class<?> type) {
         this.type = type;
+        // 如果类型为ExtensionFactory则直接赋值为null，否则获取ExtensionFactory类型的ExtensionLoader，进而获取ExtensionFactory类型的AdaptiveExtension
         objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
     }
 
@@ -475,6 +479,7 @@ public class ExtensionLoader<T> {
                     instance = cachedAdaptiveInstance.get();
                     if (instance == null) {
                         try {
+                            // 创建AdaptiveExtension
                             instance = createAdaptiveExtension();
                             cachedAdaptiveInstance.set(instance);
                         } catch (Throwable t) {
@@ -610,6 +615,11 @@ public class ExtensionLoader<T> {
         return getExtensionClasses().get(name);
     }
 
+    /**
+     * 获取接口的默认实现类，并放到缓存里
+     *
+     * @return
+     */
     private Map<String, Class<?>> getExtensionClasses() {
         Map<String, Class<?>> classes = cachedClasses.get();
         if (classes == null) {
@@ -628,6 +638,8 @@ public class ExtensionLoader<T> {
     private Map<String, Class<?>> loadExtensionClasses() {
         cacheDefaultExtensionName();
 
+        // 如果SPI注解不存在或是SPI指定的value只有一个值则会从默认的路径下加载实现类
+        // type.getName()为接口的群路径名称，已全路径名称作为文件名
         Map<String, Class<?>> extensionClasses = new HashMap<>();
         loadDirectory(extensionClasses, DUBBO_INTERNAL_DIRECTORY, type.getName());
         loadDirectory(extensionClasses, DUBBO_INTERNAL_DIRECTORY, type.getName().replace("org.apache", "com.alibaba"));
@@ -640,6 +652,8 @@ public class ExtensionLoader<T> {
 
     /**
      * extract and cache default extension name if exists
+     * 校验并获取注解SPI指定的值
+     * 目前来看SPI里指定多个值有点多余，因为指定了也会报错
      */
     private void cacheDefaultExtensionName() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
@@ -785,6 +799,7 @@ public class ExtensionLoader<T> {
 
     /**
      * cache Adaptive class which is annotated with <code>Adaptive</code>
+     * loadClass时调用
      */
     private void cacheAdaptiveClass(Class<?> clazz) {
         if (cachedAdaptiveClass == null) {
@@ -844,11 +859,17 @@ public class ExtensionLoader<T> {
         }
     }
 
+    /**
+     * 获取AdaptiveExtensionClass
+     *
+     * @return
+     */
     private Class<?> getAdaptiveExtensionClass() {
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
+        // 如果没有指定的默认实现，则会通过字节码生成一个
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
 
